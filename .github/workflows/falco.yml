@@ -25,11 +25,14 @@ jobs:
           mode: analyze
           verbose: true
 
-      - name: Trigger suspicious shell inside container
+      - name: Trigger suspicious activity
         run: |
           docker rm -f nginx-test || true
           docker run -d --name nginx-test nginx:1.14
-          docker exec nginx-test sh -c "whoami && hostname && cat /etc/passwd"
+          docker exec nginx-test sh -c "
+            wget https://example.com || true;
+            cat /etc/shadow || true;
+          "
 
       - name: Stop Falco
         if: always()
