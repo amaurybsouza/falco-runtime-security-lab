@@ -7,7 +7,7 @@ on:
   pull_request:
 
 jobs:
-  foo:
+  falco-runtime:
     name: Falco Runtime Capture
     runs-on: ubuntu-latest
 
@@ -25,10 +25,11 @@ jobs:
           mode: analyze
           verbose: true
 
-      - name: Trigger shell inside container
+      - name: Trigger suspicious shell inside container
         run: |
+          docker rm -f nginx-test || true
           docker run -d --name nginx-test nginx:1.14
-          docker exec nginx-test sh -c "whoami && hostname && ps aux"
+          docker exec nginx-test sh -c "whoami && hostname && cat /etc/passwd"
 
       - name: Stop Falco
         if: always()
@@ -37,17 +38,17 @@ jobs:
           mode: analyze
           verbose: true
 
-  analyze-foo:
+  falco-analyze:
     name: Falco Analyze Report
     runs-on: ubuntu-latest
-    needs: foo
+    needs: falco-runtime
 
     permissions:
       contents: read
       actions: read
 
     steps:
-      - name: Analyze
+      - name: Analyze Falco events
         uses: falcosecurity/falco-actions/analyze@main
         with:
           falco-version: '0.39.0'
