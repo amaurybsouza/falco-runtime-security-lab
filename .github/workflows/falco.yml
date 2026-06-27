@@ -1,0 +1,53 @@
+name: SBOM Security Scan
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  foo:
+    name: Falco Runtime Capture
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      actions: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Start Falco
+        uses: falcosecurity/falco-actions/start@main
+        with:
+          mode: analyze
+          verbose: true
+
+      - name: Trigger shell inside container
+        run: |
+          docker run -d --name nginx-test nginx:1.14
+          docker exec nginx-test sh -c "whoami && hostname && ps aux"
+
+      - name: Stop Falco
+        if: always()
+        uses: falcosecurity/falco-actions/stop@main
+        with:
+          mode: analyze
+          verbose: true
+
+  analyze-foo:
+    name: Falco Analyze Report
+    runs-on: ubuntu-latest
+    needs: foo
+
+    permissions:
+      contents: read
+      actions: read
+
+    steps:
+      - name: Analyze
+        uses: falcosecurity/falco-actions/analyze@main
+        with:
+          falco-version: '0.39.0'
